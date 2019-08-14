@@ -65,6 +65,9 @@ class my_QLabel(QLabel):
         self.released = False
         self.image_scale = 1
         self.label_dic = getLabelDic()
+        config_dic,_ = getConfig()
+        self.num_class = config_dic['number_classes']
+        
     
     #def wheelEvent(self,event):
     #    super().wheelEvent(event)
@@ -93,6 +96,7 @@ class my_QLabel(QLabel):
                 label = self.label_lists[index]
                 qp.drawText(int(coord[0])-5,int(coord[1])-5,str(self.label_dic[str(label)]))
                 index = index + 1
+
 
 
     def clear_labels(self):
@@ -132,11 +136,10 @@ class my_QLabel(QLabel):
         if x1!=x0 and y1!=y0:
             self.position_lists.append((x0,y0,x1,y1,self.image_scale))
             self.coord_list.append([x0,y0,x1,y1])
+            self.ppw = popupwindow(int(self.num_class),self.label_lists)
+            self.ppw.show()
         set_mouse_press_position(event.pos().x(),event.pos().y())
-        print(event.pos().x(),event.pos().y())
-        num_class = 10
-        self.ppw = popupwindow(num_class,self.label_lists)
-        self.ppw.show()
+        #print(event.pos().x(),event.pos().y())
         self.released = True 
 
 

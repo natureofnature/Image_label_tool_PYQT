@@ -234,7 +234,7 @@ class my_QLabel_painter(QLabel):
         return len(self.qimage_list) > 1
 
     def get_bboxes(self):
-        return self.position_lists
+        return self.position_lists,[]
 
 
 class popupwindow(QWidget):
@@ -250,6 +250,7 @@ class popupwindow(QWidget):
         self.setGeometry(y,x,500,g_x)
         #self.setGeometry(int(w_w/2),int(w_h/2),500,500)
         self.raise_()
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowStaysOnTopHint)
         self.label_dic = getLabelDic()
         self.set_layout()
         self.label_number = 0
@@ -287,7 +288,7 @@ class popupwindow(QWidget):
         row_index = 0
         button_group = QButtonGroup()
         for i in range(self.num_class):
-            print(col_index,row_index)
+            #print(col_index,row_index)
             button = QRadioButton(self.label_dic[str(i+1)])
             button_group.addButton(button)
             button.toggled.connect(lambda state,arg0=(i+1):self.set_label(arg0))
