@@ -28,6 +28,7 @@ import sys
 import time
 from shutil import copy, move
 from global_variable import get_screen_size,get_mouse_press_position
+from Configure import getConfig,setConfig,getLastDialogue,setPath,getLabelDic
 
 class my_QScrollArea(QScrollArea):
     def __init__(self,widget=None):
@@ -237,31 +238,38 @@ class my_QLabel_painter(QLabel):
 
 
 class popupwindow(QWidget):
-    def __init__(self):
+    def __init__(self,num_class = 2,label_val = []):
+        self.num_class = num_class
         QWidget.__init__(self)
         w_w,w_h = get_screen_size()
-        self.setWindowTitle('Paint on the target')
+        self.setWindowTitle('Set the label')
         x,y = get_mouse_press_position()
         #print(x,y)
-        self.setGeometry(x,y,500,500)
+        g_x = (num_class/5+1)*50
+        
+        self.setGeometry(y,x,500,g_x)
         #self.setGeometry(int(w_w/2),int(w_h/2),500,500)
         self.raise_()
+        self.label_dic = getLabelDic()
         self.set_layout()
+        self.label_number = 0
+        self.label_val = label_val
 
     def set_layout(self):
         self.setStyleSheet("background-color: lightyellow;")
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        menubar = QMenuBar()
-        actionFile = menubar.addMenu("File")
-        self.layout.addWidget(menubar, 0, 0,1,1)
-        actionFile.addAction("Select image folder")
-        self.button_frame = QFrame(self)
-        self.button_frame.setFrameShape(QFrame.StyledPanel)
-        self.button_frame.setFrameShadow(QFrame.Raised)
-        self.layout.addWidget(self.button_frame,1,0,30,1)
+        #menubar = QMenuBar()
+        #actionFile = menubar.addMenu("File")
+        #self.layout.addWidget(menubar, 0, 0,1,1)
+        #actionFile.addAction("Select image folder")
+        #self.button_frame = QFrame(self)
+        #self.button_frame.setFrameShape(QFrame.StyledPanel)
+        #self.button_frame.setFrameShadow(QFrame.Raised)
+        #self.layout.addWidget(self.button_frame,1,0,30,1)
 
 
+        '''
         self.imageLabel = my_QLabel_painter()
         #self.imageLabel.set_qpainter(self.qpixmap)
         self.imageLabel.setBackgroundRole(QPalette.Base)
@@ -270,11 +278,34 @@ class popupwindow(QWidget):
         self.scrollArea = my_QScrollArea()
         self.scrollArea.setBackgroundRole(QPalette.Dark)
         self.scrollArea.setWidget(self.imageLabel)
+        '''
 
 
-        self.layout.addWidget(self.scrollArea,31,0,60,1)
+        #self.layout.addWidget(self.scrollArea,31,0,60,1)
+        column = 5
+        col_index = 0
+        row_index = 0
+        button_group = QButtonGroup()
+        for i in range(self.num_class):
+            print(col_index,row_index)
+            button = QRadioButton(self.label_dic[str(i+1)])
+            button_group.addButton(button)
+            button.toggled.connect(lambda state,arg0=(i+1):self.set_label(arg0))
+            self.layout.addWidget(button,row_index,col_index,1,1)
+            if (i+1) % column == 0 and i > 0:
+                col_index = 0
+                row_index = row_index + 1
+            else:
+                col_index = col_index+1
 
- 
+        
+    def closeEvent(self,event):
+        self.label_val.append(self.label_number)
+
+    def set_label(self,label_number):
+        self.label_number = label_number
+        self.close()
+        
 
 
     

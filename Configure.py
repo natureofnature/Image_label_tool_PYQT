@@ -37,6 +37,18 @@ def setConfig(dic,key,value):
                 f.write("#"+txt_notes+"\n")
             f.write(k+":->"+v+"\n")
             
+def getLabelDic():
+    config = "./configure_files/label_dic.cfg"
+    dic = {}
+    with open(config) as f:
+        for line in f:
+            tmp = (line.rstrip('\r\n').split(":->"))
+            if len(tmp) <2:
+                tmp.append("Undefined")
+            dic.update({tmp[0]:tmp[1]})
+    return dic
+
+
 
 
 def getLastDialogue():

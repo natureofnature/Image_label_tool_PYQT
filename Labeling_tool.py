@@ -18,7 +18,7 @@ from PyQt5.QtCore import *
 from PIL import Image,ImageDraw
 from PyQt5 import QtCore,QtGui
 from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
-from Configure import getConfig,setConfig,getLastDialogue,setPath
+from Configure import getConfig,setConfig,getLastDialogue,setPath,getLabelDic
 import imghdr
 import threading
 import numpy as np
@@ -31,6 +31,7 @@ from shutil import copy, move
 from Paint_window import popupwindow,my_QLabel_painter
 from global_variable import set_screen_size,set_mouse_press_position
 
+Image.MAX_IMAGE_PIXELS = 1000000000
 
 class my_QScrollArea(QScrollArea):
     def __init__(self,widget=None):
@@ -58,10 +59,12 @@ class my_QLabel(QLabel):
         self.coord = [0,0,0,0]
         self.coord_list = []
         self.position_lists = []
+        self.label_lists = [] #store labels
         self.penRectangle = QtGui.QPen(QtCore.Qt.green)
         self.penRectangle.setWidth(1)
         self.released = False
         self.image_scale = 1
+        self.label_dic = getLabelDic()
     
     #def wheelEvent(self,event):
     #    super().wheelEvent(event)
@@ -83,16 +86,25 @@ class my_QLabel(QLabel):
         qp.setPen(self.penRectangle)
         if self.released is False:
             qp.drawRect(QtCore.QRect(self.coord[0],self.coord[1],self.coord[2]-self.coord[0],self.coord[3]-self.coord[1]))
+        index = 0
         for coord in self.coord_list:
             qp.drawRect(QtCore.QRect(int(coord[0]),int(coord[1]),int(coord[2]-coord[0]),int(coord[3]-coord[1])))
+            if index < len(self.label_lists):
+                label = self.label_lists[index]
+                qp.drawText(int(coord[0])-5,int(coord[1])-5,str(self.label_dic[str(label)]))
+                index = index + 1
 
 
     def clear_labels(self):
         del(self.coord_list[:])
         del(self.position_lists[:])
+        del(self.label_lists[:])
 
 
     def mousePressEvent(self, event):
+        if len(self.label_lists) != len(self.coord_list):#no label is set
+            print(len(self.label_lists))
+            return
         self.coord[0] = event.pos().x()
         self.coord[1] = event.pos().y()
         self.coord[2] = event.pos().x()
@@ -102,12 +114,16 @@ class my_QLabel(QLabel):
         self.released = False
 
     def mouseMoveEvent(self, event):
+        if len(self.label_lists) != len(self.coord_list):#no label is set
+            return
         self.coord[2] = event.pos().x()
         self.coord[3] = event.pos().y()
         self.round_coord()
         self.update()
 
     def mouseReleaseEvent(self,event):
+        if len(self.label_lists) != len(self.coord_list):#no label is set
+            return
         self.coord[2] = event.pos().x()
         self.coord[3] = event.pos().y()
         self.round_coord()
@@ -118,7 +134,8 @@ class my_QLabel(QLabel):
             self.coord_list.append([x0,y0,x1,y1])
         set_mouse_press_position(event.pos().x(),event.pos().y())
         print(event.pos().x(),event.pos().y())
-        self.ppw = popupwindow()
+        num_class = 10
+        self.ppw = popupwindow(num_class,self.label_lists)
         self.ppw.show()
         self.released = True 
 
@@ -137,11 +154,14 @@ class my_QLabel(QLabel):
     def undo(self):
         if len(self.coord_list) > 0:
             del self.coord_list[-1]
+            del self.position_lists[-1]
+            del self.label_lists[-1]
+           
             self.update()
 
 
     def get_bboxes(self):
-        return self.position_lists
+        return self.position_lists,self.label_lists
 
 
 class Window(QWidget):
@@ -164,6 +184,8 @@ class Window(QWidget):
         dic,_ = getConfig()
         self.window_width = int(dic['width'])
         self.window_height= int(dic['height'])
+        self.label_mode = dic['label_mode']
+        
 
         
     def __init__(self,screen):
@@ -200,9 +222,9 @@ class Window(QWidget):
         option_menu = menubar.addMenu("Options")
         option_menu.addAction("Number of classes")
         #option_menu.addAction("Move mode")
-        paint_mode_menu = menubar.addMenu("Label mode")
-        paint_mode_menu.addAction("Bounding box mode").triggered.connect(lambda:self.set_label_mode("bounding_box_mode"))
-        paint_mode_menu.addAction("Paint mode").triggered.connect(lambda:self.set_label_mode("painting_mode"))
+        #paint_mode_menu = menubar.addMenu("Label mode")
+        #paint_mode_menu.addAction("Bounding box mode").triggered.connect(lambda:self.set_label_mode("bounding_box_mode"))
+        #paint_mode_menu.addAction("Paint mode").triggered.connect(lambda:self.set_label_mode("painting_mode"))
         move_mode_menu = option_menu.addMenu("Move mode")
         move_mode_menu.addAction("Keep original images").triggered.connect(self.set_move_false)
         move_mode_menu.addAction("Move original images").triggered.connect(self.set_move_true)
@@ -213,6 +235,7 @@ class Window(QWidget):
         self.setGeometry(0,0,self.window_width,self.window_height)
         self.set_layout()
         self.imageLabel = None
+        self.set_label_mode()
         #controller
         self.scale_rate = 1.25
         self.scale = 1
@@ -224,13 +247,15 @@ class Window(QWidget):
         self.move_mode = False
         self.last_image = "./configure_files/endbg.png"
         self.wheel_angle = 0
-    def set_label_mode(self,mode):
-        self.label_mode = mode
+
+
+    def set_label_mode(self):
         if self.label_mode == "painting_mode":
             self.imageLabel = my_QLabel_painter()
             #self.imageLabel.set_qpainter(self.qpixmap)
         else:
             self.imageLabel = my_QLabel()
+        print("Using mode:",self.label_mode)
         self.imageLabel.setBackgroundRole(QPalette.Base)
         self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.imageLabel.setScaledContents(True)
@@ -306,7 +331,7 @@ class Window(QWidget):
         target_folder_OK = os.path.join(self.OK_path,base_name)
 
         
-        bbxes = self.imageLabel.get_bboxes()
+        bbxes,label_lists = self.imageLabel.get_bboxes()
         im = Image.open(self.image_name)
         im_copy = im.copy()
         #self.imageLabel.save_img("/dev/shm/m1/123.bmp")
@@ -360,10 +385,11 @@ class Window(QWidget):
                             x1 = max(x0,x1)
                             y0 = min(y0,y1)
                             y1 = max(y0,y1)
+                            lab = label_lists[line_index]
                             draw.rectangle(((x0,y0),(x1,y1)),outline='yellow')
                             if line_index > 0:
                                 f.write('\n')
-                            f.write(str(x0)+","+str(y0)+","+str(x1)+","+str(y1))
+                            f.write(str(x0)+","+str(y0)+","+str(x1)+","+str(y1)+","+str(lab))
                             line_index = line_index + 1
                             im_cropped = im_copy.crop((x0,y0,x1,y1))
                             im_cropped.save(os.path.join(target_folder_NG,base_name+"_rect_"+str(line_index)+".jpg"))
@@ -519,8 +545,8 @@ class Window(QWidget):
 
 
 
-app = QApplication(sys.argv)
-scr = app.primaryScreen()
-screen = Window(scr)
-screen.show()
-sys.exit(app.exec_())
+#app = QApplication(sys.argv)
+#scr = app.primaryScreen()
+#screen = Window(scr)
+#screen.show()
+#sys.exit(app.exec_())
