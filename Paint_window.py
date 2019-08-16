@@ -238,8 +238,9 @@ class my_QLabel_painter(QLabel):
 
 
 class popupwindow(QWidget):
-    def __init__(self,num_class = 2,label_val = []):
+    def __init__(self,num_class = 2,label_val = [],window_status=[]):
         self.num_class = num_class
+        self.window_status = window_status
         QWidget.__init__(self)
         w_w,w_h = get_screen_size()
         self.setWindowTitle('Set the label')
@@ -247,7 +248,7 @@ class popupwindow(QWidget):
         #print(x,y)
         g_x = (num_class/5+1)*50
         
-        self.setGeometry(y,x,500,g_x)
+        self.setGeometry(200,200,500,g_x)
         #self.setGeometry(int(w_w/2),int(w_h/2),500,500)
         self.raise_()
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowStaysOnTopHint)
@@ -302,6 +303,7 @@ class popupwindow(QWidget):
         
     def closeEvent(self,event):
         self.label_val.append(self.label_number)
+        del(self.window_status[:])
 
     def set_label(self,label_number):
         self.label_number = label_number

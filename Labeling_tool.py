@@ -60,7 +60,9 @@ class my_QLabel(QLabel):
         self.coord_list = []
         self.position_lists = []
         self.label_lists = [] #store labels
+        self.window_status = []
         self.penRectangle = QtGui.QPen(QtCore.Qt.green)
+        self.penRectangle_ruler = QtGui.QPen(QtCore.Qt.yellow,1,QtCore.Qt.DashDotLine)
         self.penRectangle.setWidth(1)
         self.released = False
         self.image_scale = 1
@@ -86,11 +88,16 @@ class my_QLabel(QLabel):
         qp = QtGui.QPainter(self)
         br = QtGui.QBrush(QtGui.QColor(100, 10, 10, 40))  
         #qp.setBrush(br)   
-        qp.setPen(self.penRectangle)
         if self.released is False:
+            qp.setPen(self.penRectangle)
             qp.drawRect(QtCore.QRect(self.coord[0],self.coord[1],self.coord[2]-self.coord[0],self.coord[3]-self.coord[1]))
+            qp.setPen(self.penRectangle_ruler)
+            qp.drawLine(int(self.coord[2]),0,int(self.coord[2]),20000)
+            qp.drawLine(0,int(self.coord[3]),20000,int(self.coord[3]))
+
         index = 0
         for coord in self.coord_list:
+            qp.setPen(self.penRectangle)
             qp.drawRect(QtCore.QRect(int(coord[0]),int(coord[1]),int(coord[2]-coord[0]),int(coord[3]-coord[1])))
             if index < len(self.label_lists):
                 label = self.label_lists[index]
@@ -136,7 +143,8 @@ class my_QLabel(QLabel):
         if x1!=x0 and y1!=y0:
             self.position_lists.append((x0,y0,x1,y1,self.image_scale))
             self.coord_list.append([x0,y0,x1,y1])
-            self.ppw = popupwindow(int(self.num_class),self.label_lists)
+            self.window_status.append("opened")
+            self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status)
             self.ppw.show()
         set_mouse_press_position(event.pos().x(),event.pos().y())
         #print(event.pos().x(),event.pos().y())
@@ -155,6 +163,9 @@ class my_QLabel(QLabel):
 
             
     def undo(self):
+        if len(self.window_status) > 0:
+            #pop up window not closed 
+            return
         if len(self.coord_list) > 0:
             del self.coord_list[-1]
             del self.position_lists[-1]
@@ -188,6 +199,7 @@ class Window(QWidget):
         self.window_width = int(dic['width'])
         self.window_height= int(dic['height'])
         self.label_mode = dic['label_mode']
+        self.verify_bounding_box = dic['verify_bounding_box']
         
 
         
@@ -335,14 +347,13 @@ class Window(QWidget):
 
         
         bbxes,label_lists = self.imageLabel.get_bboxes()
-        im = Image.open(self.image_name)
-        im_copy = im.copy()
         #self.imageLabel.save_img("/dev/shm/m1/123.bmp")
         print("--->",self.image_name)
 
         if self.label_mode == "painting_mode":
+            im = Image.open(self.image_name)
+            im_copy = im.copy()
             status = self.imageLabel.is_labeled()
-            print(status)
             if status is True: #has mask
                 if not os.path.exists(target_folder_NG):
                     os.makedirs(target_folder_NG)
@@ -366,16 +377,16 @@ class Window(QWidget):
                     move(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
 
 
-
-
-
         else:
             if len(bbxes) > 0:
                 if not os.path.exists(target_folder_NG):
                     os.makedirs(target_folder_NG)
                 #NG images
                 try:
-                    draw = ImageDraw.Draw(im)
+                    if self.verify_bounding_box == 'yes':
+                        im = Image.open(self.image_name)
+                        im_copy = im.copy()
+                        draw = ImageDraw.Draw(im)
                     with open(os.path.join(target_folder_NG,base_name+".txt"),'w') as f:
                         line_index = 0
                         for box in bbxes:
@@ -389,18 +400,21 @@ class Window(QWidget):
                             y0 = min(y0,y1)
                             y1 = max(y0,y1)
                             lab = label_lists[line_index]
-                            draw.rectangle(((x0,y0),(x1,y1)),outline='yellow')
+                            if self.verify_bounding_box == 'yes':
+                                draw.rectangle(((x0,y0),(x1,y1)),outline='yellow')
                             if line_index > 0:
                                 f.write('\n')
                             f.write(str(x0)+","+str(y0)+","+str(x1)+","+str(y1)+","+str(lab))
                             line_index = line_index + 1
-                            im_cropped = im_copy.crop((x0,y0,x1,y1))
-                            im_cropped.save(os.path.join(target_folder_NG,base_name+"_rect_"+str(line_index)+".jpg"))
+                            if self.verify_bounding_box == 'yes':
+                                im_cropped = im_copy.crop((x0,y0,x1,y1))
+                                im_cropped.save(os.path.join(target_folder_NG,base_name+"_rect_"+str(line_index)+".jpg"))
 
                 except Exception as e:
                     self.printf(str(e))
                     print(e)
-                im.save(os.path.join(target_folder_NG,base_name+"_rect_whole.jpg"))
+                if self.verify_bounding_box == 'yes':
+                    im.save(os.path.join(target_folder_NG,base_name+"_rect_whole.jpg"))
                 if self.move_mode is False:
                     copy(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
                 else:
