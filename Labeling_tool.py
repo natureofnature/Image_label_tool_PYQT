@@ -214,6 +214,7 @@ class Window(QWidget):
         self.window_height= int(dic['height'])
         self.label_mode = dic['label_mode']
         self.verify_bounding_box = dic['verify_bounding_box']
+        self.num_class = dic['number_classes']
         
 
 
@@ -248,7 +249,7 @@ class Window(QWidget):
         self.key_to_display['Path saving labeled image'] = "Default path"
         self.key_to_display['Path saving unlabeled image'] = "Default path"
         self.key_to_display['Move_mode'] = 'Copy only' 
-        self.key_to_display['Number of class'] = 0
+        self.key_to_display['Number of class'] = self.num_class
         self.key_to_display['Mouse position'] = "0,0"
 
 
