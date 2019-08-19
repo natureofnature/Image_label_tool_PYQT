@@ -642,7 +642,8 @@ class Window(QWidget):
     def update_text_key(self,key,value):
         self.key_to_display[key] = value
         with open(self.log_file,'a') as f:
-            f.write(str(key)+":->"+str(value)+"\r\n")
+            if key != "Mouse position":
+                f.write(str(key)+":->"+str(value)+"\r\n")
     
         self.update_displaying_text()
 
