@@ -53,9 +53,10 @@ class my_QScrollArea(QScrollArea):
    
 
 class my_QLabel(QLabel):
-    def __init__(self):
+    def __init__(self,update_text_key):
         super(my_QLabel,self).__init__()
         self.setStyleSheet('QFrame {background-color:white;}')
+        self.update_text_key = update_text_key
         self.coord = [0,0,0,0]
         self.coord_list = []
         self.position_lists = []
@@ -69,6 +70,9 @@ class my_QLabel(QLabel):
         self.label_dic = getLabelDic()
         config_dic,_ = getConfig()
         self.num_class = config_dic['number_classes']
+
+    def setNumClasses(self,value):
+        self.num_class= value
         
     
     #def wheelEvent(self,event):
@@ -123,6 +127,7 @@ class my_QLabel(QLabel):
         self.round_coord()
         self.update()
         self.released = False
+        self.update_text_key('Mouse position',str(int(self.coord[2]/self.image_scale))+","+str(int(self.coord[3]/self.image_scale)))
 
     def mouseMoveEvent(self, event):
         if len(self.label_lists) != len(self.coord_list):#no label is set
@@ -131,6 +136,7 @@ class my_QLabel(QLabel):
         self.coord[3] = event.pos().y()
         self.round_coord()
         self.update()
+        self.update_text_key('Mouse position',str(int(self.coord[2]/self.image_scale))+","+str(int(self.coord[3]/self.image_scale)))
 
     def mouseReleaseEvent(self,event):
         if len(self.label_lists) != len(self.coord_list):#no label is set
@@ -140,6 +146,14 @@ class my_QLabel(QLabel):
         self.round_coord()
         self.update()
         x0,y0,x1,y1 = self.coord
+        if x0>x1:
+            tmp = x1
+            x1 = x0
+            x0 = tmp
+        if y0>y1:
+            tmp = y1
+            y1 = y0
+            y0 = tmp
         if x1!=x0 and y1!=y0:
             self.position_lists.append((x0,y0,x1,y1,self.image_scale))
             self.coord_list.append([x0,y0,x1,y1])
@@ -202,10 +216,16 @@ class Window(QWidget):
         self.verify_bounding_box = dic['verify_bounding_box']
         
 
+
+
+
+        
+
         
     def __init__(self,screen):
 
         self.label_mode = "bounding_box_mode"
+        self.log_file = "./log.txt"
         #self.label_mode = "painting_mode"
 
         screen_size = screen.size()
@@ -219,10 +239,25 @@ class Window(QWidget):
         self.layout.addWidget(menubar, 0, 0,1,1)
         actionFile = menubar.addMenu("File")
 
+
+        self.key_to_display={}
+        self.key_to_display['Folder'] = ""
+        self.key_to_display['Total image'] = 0
+        self.key_to_display['Index'] = 0
+        self.key_to_display['Image name'] = ""
+        self.key_to_display['Path saving labeled image'] = "Default path"
+        self.key_to_display['Path saving unlabeled image'] = "Default path"
+        self.key_to_display['Move_mode'] = 'Copy only' 
+        self.key_to_display['Number of class'] = 0
+        self.key_to_display['Mouse position'] = "0,0"
+
+
+
+
         #Part 1
         actionFile.addAction("Select image folder").triggered.connect(self.open_folder)
-        actionFile.addAction("Save NG image to ...").triggered.connect(self.set_path_NG)
-        actionFile.addAction("Save OK images to ...").triggered.connect(self.set_path_OK)
+        actionFile.addAction("Saving labeld image to ...").triggered.connect(self.set_path_NG)
+        actionFile.addAction("Saving unlabeld image to...").triggered.connect(self.set_path_OK)
         actionFile.addSeparator()
         actionFile.addAction("Quit").triggered.connect(self.Quit)
         self.set_menu_style(actionFile)
@@ -235,7 +270,11 @@ class Window(QWidget):
         #menubar.addAction("Previous")
         #part 3
         option_menu = menubar.addMenu("Options")
-        option_menu.addAction("Number of classes")
+        class_menu = option_menu.addMenu("Number of classes")
+        for i in range(32):
+            class_menu.addAction(str(i+1)).triggered.connect(lambda state,arg0=(i+1):self.setClassNumber(arg0))
+        
+
         #option_menu.addAction("Move mode")
         #paint_mode_menu = menubar.addMenu("Label mode")
         #paint_mode_menu.addAction("Bounding box mode").triggered.connect(lambda:self.set_label_mode("bounding_box_mode"))
@@ -243,6 +282,8 @@ class Window(QWidget):
         move_mode_menu = option_menu.addMenu("Move mode")
         move_mode_menu.addAction("Keep original images").triggered.connect(self.set_move_false)
         move_mode_menu.addAction("Move original images").triggered.connect(self.set_move_true)
+
+
         self.set_menu_style(option_menu)
 
 
@@ -263,13 +304,17 @@ class Window(QWidget):
         self.last_image = "./configure_files/endbg.png"
         self.wheel_angle = 0
 
+    def setClassNumber(self,value):
+        self.imageLabel.setNumClasses(value)
+        self.update_text_key('Number of class',value)
+        
 
     def set_label_mode(self):
         if self.label_mode == "painting_mode":
             self.imageLabel = my_QLabel_painter()
             #self.imageLabel.set_qpainter(self.qpixmap)
         else:
-            self.imageLabel = my_QLabel()
+            self.imageLabel = my_QLabel(self.update_text_key)
         print("Using mode:",self.label_mode)
         self.imageLabel.setBackgroundRole(QPalette.Base)
         self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -283,11 +328,13 @@ class Window(QWidget):
 
     def set_move_false(self):
         self.move_mode = False
-        self.printf("Original files will not be removed")
+        self.update_text_key('Move_mode','Copy only')
+        #self.printf("Original files will not be removed")
 
     def set_move_true(self):
         self.move_mode = True
-        self.printf("Original files will be removed")
+        self.update_text_key('Move_mode','Move original image')
+        #self.printf("Original files will be removed")
 
         
     def open_folder(self):
@@ -300,10 +347,12 @@ class Window(QWidget):
         while path is None or len(path) == 0:
             path = QFileDialog.getExistingDirectory(self, 'Select directory',directory = last_image_dir)
         setPath('last_source_folder',path)
-        self.printf("Selected folder ("+path+")")
+        #self.printf("Selected folder ("+path+")")
+        self.update_text_key('Folder', path)
         
         self.image_lists = [os.path.join(path,i) for i in os.listdir(path)]
-        self.printf("There are "+str(len(self.image_lists))+" files in the selected folder")
+        #self.printf("There are "+str(len(self.image_lists))+" files in the selected folder")
+        self.update_text_key('Total image', len(self.image_lists))
         self.image_index = 0
 
     def set_path_NG(self):
@@ -317,7 +366,8 @@ class Window(QWidget):
             path = QFileDialog.getExistingDirectory(self, 'Select directory',directory = last_image_dir)
         setPath('last_save_folder_NG',path)
         self.NG_path = path
-        self.printf("NG path is set to: "+self.NG_path)
+        #self.printf("NG path is set to: "+self.NG_path)
+        self.update_text_key('Path saving labeled image',self.NG_path)
         
     def set_path_OK(self):
         path_dic = getLastDialogue()
@@ -330,7 +380,8 @@ class Window(QWidget):
             path = QFileDialog.getExistingDirectory(self, 'Select directory',directory = last_image_dir)
         setPath('last_save_folder_OK',path)
         self.OK_path = path
-        self.printf("OK path is set to: "+self.OK_path)
+        #self.printf("OK path is set to: "+self.OK_path)
+        self.update_text_key('Path saving unlabeled image',self.OK_path)
      
 
     
@@ -348,7 +399,7 @@ class Window(QWidget):
         
         bbxes,label_lists = self.imageLabel.get_bboxes()
         #self.imageLabel.save_img("/dev/shm/m1/123.bmp")
-        print("--->",self.image_name)
+        #print("--->",self.image_name)
 
         if self.label_mode == "painting_mode":
             im = Image.open(self.image_name)
@@ -357,7 +408,7 @@ class Window(QWidget):
             if status is True: #has mask
                 if not os.path.exists(target_folder_NG):
                     os.makedirs(target_folder_NG)
-                print(os.path.join(target_folder_NG,base_name+".bmp"))
+                #print(os.path.join(target_folder_NG,base_name+".bmp"))
                 self.imageLabel.save_img(os.path.join(target_folder_NG,base_name+"_labeled.bmp"))
                 if self.move_mode is False:
                     copy(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
@@ -423,7 +474,7 @@ class Window(QWidget):
             else:
                 #if not os.path.exists(target_folder_OK):
                 #    os.makedirs(target_folder_OK)
-                print(self.image_name)
+                #print(self.image_name)
                 if self.move_mode is False:
                     copy(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
                 else:
@@ -441,6 +492,10 @@ class Window(QWidget):
         if self.imageLabel is None:
             self.printf("Please select labeling mode first")
             return 
+        if os.path.exists(self.NG_path): 
+            self.update_text_key('Path saving labeled image',self.NG_path)
+        if os.path.exists(self.OK_path):
+            self.update_text_key('Path saving unlabeled image',self.OK_path)
         self.save_result()
         if len(self.image_lists) < 1 or self.image_index >=len(self.image_lists):
             self.printf("No remaining images to be labeled, current index: "+str(self.image_index))
@@ -459,7 +514,9 @@ class Window(QWidget):
         if self.image_index >=len(self.image_lists):
             self.image_name = None
             return
-        self.printf("Processing: [index = "+str(self.image_index+1)+"] "+image_name)
+        #self.printf("Processing: [index = "+str(self.image_index+1)+"] "+image_name)
+        self.update_text_key('Index',self.image_index + 1)
+        self.update_text_key('Image name',image_name)
 
         image = QImage(image_name)
         qpixmap = QPixmap.fromImage(image)
@@ -530,17 +587,26 @@ class Window(QWidget):
        
     def set_layout(self):
         self.setStyleSheet("background-color: lightyellow;")
+        self.splitter = QSplitter(Qt.Vertical)
         
         self.image_frame = QFrame(self)
         self.image_frame.setFrameShape(QFrame.StyledPanel)
         self.image_frame.setFrameShadow(QFrame.Raised)
-        self.layout.addWidget(self.image_frame,1,0,90,1)
+
+
+
+        #--window(self.layout)
+        #----imageframe(image_layout)
+        #----infoframe(txt_laytout)
+        #------scrollarea
+        #--------text_box
         self.image_layout = QGridLayout() 
         self.image_frame.setLayout(self.image_layout)
 
 
 
         self.text_box= QTextEdit() 
+        #self.text_box.setMaximumSize(10000000,150)
         self.scrollArea_info = my_QScrollArea(self.text_box)
         self.scrollArea_info.setBackgroundRole(QPalette.Dark)
         self.scrollArea_info.setWidget(self.text_box)
@@ -548,15 +614,36 @@ class Window(QWidget):
         self.info_frame = QFrame(self)
         self.info_frame.setFrameShape(QFrame.StyledPanel)
         self.info_frame.setFrameShadow(QFrame.Raised)
-        self.layout.addWidget(self.info_frame,91,0,9,1)
+        #self.layout.addWidget(self.info_frame,91,0,10,1)
         txt_layout = QGridLayout()
         self.info_frame.setLayout(txt_layout)
         txt_layout.addWidget(self.scrollArea_info,0,0,1,1)
-
+    
+        self.splitter.addWidget(self.image_frame)
+        self.splitter.addWidget(self.info_frame)
+        self.splitter.setSizes([760,240])
+        self.layout.addWidget(self.splitter,1,0,90,1)
 
  
     def printf(self,info):
         self.text_box.append(info)
+        with open(self.log_file,'w') as f:
+            f.write(info+"\r\n")
+
+    def update_displaying_text(self):
+        info = ""
+        for i,j in self.key_to_display.items():
+            info = info+"["+str(i)+"]: "+str(j)+"\n"
+
+        self.text_box.clear()
+        self.text_box.append(info)
+
+    def update_text_key(self,key,value):
+        self.key_to_display[key] = value
+        with open(self.log_file,'a') as f:
+            f.write(str(key)+":->"+str(value)+"\r\n")
+    
+        self.update_displaying_text()
 
 
 

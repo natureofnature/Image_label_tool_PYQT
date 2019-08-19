@@ -71,6 +71,8 @@ class my_QLabel_painter(QLabel):
         self.counter = 0
         self.is_painting = True
 
+    def setNumClasses(self,value):
+        pass
     def set_qimage(self,qimage):
         del(self.qimage_list[:])
         self.qimage = qimage.copy()
@@ -235,6 +237,12 @@ class my_QLabel_painter(QLabel):
 
     def get_bboxes(self):
         return self.position_lists,[]
+
+class popupinfo(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.setWindowTitle("Information")
+        self.setGeometry(300,300,1000,500)
 
 
 class popupwindow(QWidget):
