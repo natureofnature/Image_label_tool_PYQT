@@ -27,7 +27,7 @@ import os
 from PyQt5.QtWidgets import *
 import sys
 import time
-from shutil import copy, move
+from shutil import copy, move,rmtree
 from Paint_window import popupwindow,my_QLabel_painter
 from global_variable import set_screen_size,set_mouse_press_position
 
@@ -114,6 +114,7 @@ class my_QLabel(QLabel):
         del(self.coord_list[:])
         del(self.position_lists[:])
         del(self.label_lists[:])
+        self.update()
 
 
     def mousePressEvent(self, event):
@@ -233,17 +234,21 @@ class Window(QWidget):
         set_screen_size(screen_size.width(),screen_size.height())
         self.get_attributes()
         QWidget.__init__(self)
-        self.setWindowTitle('Label_tool_V2.0.0_by_LWZ')
+        self.setWindowTitle('Label_tool_V2.1.0_by_LWZ')
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         menubar = QMenuBar()
         self.layout.addWidget(menubar, 0, 0,1,1)
         actionFile = menubar.addMenu("File")
+        #(file_in_origin_folder,file_in_target)
+        #if OK, file_in_target is path/name
+        #if NG, file_in_target is path
+        self.history= []
 
 
         self.key_to_display={}
         self.key_to_display['Folder'] = ""
-        self.key_to_display['Total image'] = 0
+        self.key_to_display['Total file'] = 0
         self.key_to_display['Index'] = 0
         self.key_to_display['Image name'] = ""
         self.key_to_display['Path saving labeled image'] = "Default path"
@@ -265,7 +270,12 @@ class Window(QWidget):
 
 
         #Part 2
-        menubar.addAction("Next").triggered.connect(self.next_image)
+        self.next_action = menubar.addAction("Next (F)")
+        self.next_action.triggered.connect(self.next_image)
+
+        #Part 3
+        menubar.addAction("Previous (P)").triggered.connect(self.previous)
+        menubar.addAction("Undo (Z)").triggered.connect(self.undo)
         
 
         #menubar.addAction("Previous")
@@ -289,7 +299,7 @@ class Window(QWidget):
 
 
 
-        self.setGeometry(0,0,self.window_width,self.window_height)
+        self.setGeometry(300,300,self.window_width,self.window_height)
         self.set_layout()
         self.imageLabel = None
         self.set_label_mode()
@@ -303,6 +313,7 @@ class Window(QWidget):
         self.OK_path = path_dic['last_save_folder_OK']
         self.move_mode = False
         self.last_image = "./configure_files/endbg.png"
+        self.first_image="./configure_files/beginbg.png"
         self.wheel_angle = 0
 
     def setClassNumber(self,value):
@@ -339,6 +350,11 @@ class Window(QWidget):
 
         
     def open_folder(self):
+        #reset background
+        image = QImage(self.first_image)
+        qpixmap = QPixmap.fromImage(image)
+        self.imageLabel.setPixmap(qpixmap)
+
         path_dic = getLastDialogue()
         last_image_dir = path_dic['last_source_folder']
         if not os.path.exists(last_image_dir) or not os.path.isdir(last_image_dir):
@@ -352,9 +368,11 @@ class Window(QWidget):
         self.update_text_key('Folder', path)
         
         self.image_lists = [os.path.join(path,i) for i in os.listdir(path)]
+        del(self.history[:])
         #self.printf("There are "+str(len(self.image_lists))+" files in the selected folder")
-        self.update_text_key('Total image', len(self.image_lists))
+        self.update_text_key('Total file', len(self.image_lists))
         self.image_index = 0
+        self.next_action.setText("Display Image")
 
     def set_path_NG(self):
         path_dic = getLastDialogue()
@@ -467,19 +485,31 @@ class Window(QWidget):
                     print(e)
                 if self.verify_bounding_box == 'yes':
                     im.save(os.path.join(target_folder_NG,base_name+"_rect_whole.jpg"))
-                if self.move_mode is False:
-                    copy(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
-                else:
-                    move(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
+                try:
+                    if self.move_mode is False:
+                        copy(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
+                    else:
+                        move(self.image_name,os.path.join(target_folder_NG,os.path.basename(self.image_name)))
+
+                    image_n,target_folder,target_n= self.image_name,target_folder_NG,os.path.join(target_folder_NG,os.path.basename(self.image_name))
+                    #("type",index,original_name,new_name,new_folder)
+                    self.history.append(('NG',self.image_index-1,image_n,target_n,target_folder))
+                except Exception as e:
+                    self.printf(str(e))
 
             else:
                 #if not os.path.exists(target_folder_OK):
                 #    os.makedirs(target_folder_OK)
                 #print(self.image_name)
-                if self.move_mode is False:
-                    copy(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
-                else:
-                    move(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
+                try:
+                    if self.move_mode is False:
+                        copy(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
+                    else:
+                        move(self.image_name,os.path.join(self.OK_path,os.path.basename(self.image_name)))
+                    image_n,target_folder,target_n= self.image_name,self.OK_path,os.path.join(self.OK_path,os.path.basename(self.image_name))
+                    self.history.append(('OK',self.image_index-1,image_n,target_n,target_folder))
+                except Exception as e:
+                    self.printf(str(e))
                 #OK images
 
             
@@ -495,16 +525,26 @@ class Window(QWidget):
             return 
         if os.path.exists(self.NG_path): 
             self.update_text_key('Path saving labeled image',self.NG_path)
+        else:
+            self.printf("Please set path to save labeled image!")
+            return
+
         if os.path.exists(self.OK_path):
             self.update_text_key('Path saving unlabeled image',self.OK_path)
+        else:
+            self.printf("Please set path to save unlabeled image!")
+            return
+
         self.save_result()
+        self.imageLabel.clear_labels()
         if len(self.image_lists) < 1 or self.image_index >=len(self.image_lists):
             self.printf("No remaining images to be labeled, current index: "+str(self.image_index))
+            self.image_name = None
             image = QImage(self.last_image)
             qpixmap = QPixmap.fromImage(image)
             self.imageLabel.setPixmap(qpixmap)
             return 
-        self.imageLabel.clear_labels()
+        #skip files that are not images
         while self.image_index < len(self.image_lists):
             image_name = self.image_lists[self.image_index] 
             if os.path.isdir(image_name) or (not imghdr.what(image_name) in ['jpg','jpeg', 'bmp', 'png', 'tiff']):
@@ -512,8 +552,13 @@ class Window(QWidget):
             else:
                 break
             self.image_index = self.image_index + 1
+            self.update_text_key('Index',self.image_index + 1)
         if self.image_index >=len(self.image_lists):
             self.image_name = None
+            self.printf("No remaining images to be labeled, current index: "+str(self.image_index))
+            image = QImage(self.last_image)
+            qpixmap = QPixmap.fromImage(image)
+            self.imageLabel.setPixmap(qpixmap)
             return
         #self.printf("Processing: [index = "+str(self.image_index+1)+"] "+image_name)
         self.update_text_key('Index',self.image_index + 1)
@@ -536,6 +581,7 @@ class Window(QWidget):
         self.imageLabel.resize(image_width,image_height)
         self.image_name = image_name
         self.image_index = self.image_index + 1
+        self.next_action.setText("Next (F)")
 
 
         
@@ -558,6 +604,11 @@ class Window(QWidget):
             self.imageLabel.scale(1/self.scale_rate)
         elif event.key()==(Qt.Key_Control and Qt.Key_Z):
             self.imageLabel.undo()
+        elif event.key()==(Qt.Key_F):
+            self.printf("go to next")
+            self.next_image() 
+        elif event.key()==(Qt.Key_P):
+            self.previous()
 
     def wheelEvent(self,event):
         if self.imageLabel is None or self.imageLabel.pixmap() is None:
@@ -627,9 +678,10 @@ class Window(QWidget):
 
  
     def printf(self,info):
+        self.text_box.clear()
         self.text_box.append(info)
         with open(self.log_file,'w') as f:
-            f.write(info+"\r\n")
+            f.write(info+"\n")
 
     def update_displaying_text(self):
         info = ""
@@ -643,9 +695,43 @@ class Window(QWidget):
         self.key_to_display[key] = value
         with open(self.log_file,'a') as f:
             if key != "Mouse position":
-                f.write(str(key)+":->"+str(value)+"\r\n")
+                f.write(str(key)+":->"+str(value)+"\n")
     
         self.update_displaying_text()
+
+    def undo(self):
+        self.imageLabel.undo()
+
+    def previous(self):
+        self.imageLabel.clear_labels()
+        if len(self.history) == 0:
+            self.printf("This is already the begining")
+            return
+        image_type, index, image_name,target_name, target_folder = self.history[-1]
+        self.image_index = index
+        if image_name != self.image_lists[self.image_index]:
+            self.printf("Inconsistent version")
+        if image_type == "NG":
+            if not os.path.exists(image_name):
+                move(target_name,image_name)
+            rmtree(target_folder)
+        else:
+            if not os.path.exists(image_name):
+                move(target_name,image_name)
+            else:
+                os.remove(target_name)
+
+
+
+
+        image = QImage(image_name)
+        qpixmap = QPixmap.fromImage(image)
+        self.imageLabel.setPixmap(qpixmap)
+        self.imageLabel.set_qimage(image)
+        self.image_name = image_name
+        del(self.history[-1])
+        self.image_index = self.image_index + 1
+
 
 
 

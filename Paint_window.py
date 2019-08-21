@@ -59,7 +59,7 @@ class my_QLabel_painter(QLabel):
         self.coord_list = []
         self.position_lists = []
         self.penRectangle = QtGui.QPen(QtCore.Qt.green)
-        self.penRectangle.setWidth(100)
+        self.penRectangle.setWidth(30)
         self.released = False
         self.image_scale = 1
         self.qpoints = []
