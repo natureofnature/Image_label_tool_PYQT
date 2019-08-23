@@ -62,14 +62,20 @@ class my_QLabel(QLabel):
         self.position_lists = []
         self.label_lists = [] #store labels
         self.window_status = []
-        self.penRectangle = QtGui.QPen(QtCore.Qt.green)
-        self.penRectangle_ruler = QtGui.QPen(QtCore.Qt.yellow,1,QtCore.Qt.DashDotLine)
+        config_dic,_ = getConfig()
+        self.bbx_color = config_dic['bbx_color']
+        self.ruler_color=config_dic['ruler_color']
+        self.color_dic={'green':QtCore.Qt.green,'red':QtCore.Qt.red,'yellow':QtCore.Qt.yellow,'white':QtCore.Qt.white,'blue':QtCore.Qt.blue}
+        self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
+        self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
         self.penRectangle.setWidth(1)
         self.released = False
         self.image_scale = 1
         self.label_dic = getLabelDic()
-        config_dic,_ = getConfig()
         self.num_class = config_dic['number_classes']
+        self.wheel_x = 0
+        self.wheel_y = 0
+        self.setMouseTracking(True)
 
     def setNumClasses(self,value):
         self.num_class= value
@@ -95,9 +101,9 @@ class my_QLabel(QLabel):
         if self.released is False:
             qp.setPen(self.penRectangle)
             qp.drawRect(QtCore.QRect(self.coord[0],self.coord[1],self.coord[2]-self.coord[0],self.coord[3]-self.coord[1]))
-            qp.setPen(self.penRectangle_ruler)
-            qp.drawLine(int(self.coord[2]),0,int(self.coord[2]),20000)
-            qp.drawLine(0,int(self.coord[3]),20000,int(self.coord[3]))
+        qp.setPen(self.penRectangle_ruler)
+        qp.drawLine(int(self.coord[2]),0,int(self.coord[2]),20000)
+        qp.drawLine(0,int(self.coord[3]),20000,int(self.coord[3]))
 
         index = 0
         for coord in self.coord_list:
@@ -117,6 +123,13 @@ class my_QLabel(QLabel):
         self.update()
 
 
+    def get_wheel_ratio(self):
+        width,height = self.pixmap().width(),self.pixmap().height()
+        return self.wheel_x/width,self.wheel_y/height
+
+
+
+
     def mousePressEvent(self, event):
         if len(self.label_lists) != len(self.coord_list):#no label is set
             print(len(self.label_lists))
@@ -131,6 +144,9 @@ class my_QLabel(QLabel):
         self.update_text_key('Mouse position',str(int(self.coord[2]/self.image_scale))+","+str(int(self.coord[3]/self.image_scale)))
 
     def mouseMoveEvent(self, event):
+        #tracking mouse position for wheel change
+        self.wheel_x = event.pos().x()/self.image_scale
+        self.wheel_y = event.pos().y()/self.image_scale
         if len(self.label_lists) != len(self.coord_list):#no label is set
             return
         self.coord[2] = event.pos().x()
@@ -156,7 +172,7 @@ class my_QLabel(QLabel):
             y1 = y0
             y0 = tmp
         if x1!=x0 and y1!=y0:
-            self.position_lists.append((x0,y0,x1,y1,self.image_scale))
+            self.position_lists.append((x0,y0,x1,y1,self.image_scale,(self.pixmap().width(),self.pixmap().height())))
             self.coord_list.append([x0,y0,x1,y1])
             self.window_status.append("opened")
             self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status)
@@ -229,6 +245,7 @@ class Window(QWidget):
         self.label_mode = "bounding_box_mode"
         self.log_file = "./log.txt"
         #self.label_mode = "painting_mode"
+        self.last_wheel_pos = [0,0]
 
         screen_size = screen.size()
         set_screen_size(screen_size.width(),screen_size.height())
@@ -256,6 +273,7 @@ class Window(QWidget):
         self.key_to_display['Move_mode'] = 'Copy only' 
         self.key_to_display['Number of class'] = self.num_class
         self.key_to_display['Mouse position'] = "0,0"
+        
 
 
 
@@ -460,15 +478,15 @@ class Window(QWidget):
                     with open(os.path.join(target_folder_NG,base_name+".txt"),'w') as f:
                         line_index = 0
                         for box in bbxes:
-                            x0,y0,x1,y1,ratio = box 
+                            x0,y0,x1,y1,ratio,(c_w,c_h) = box 
                             x0 = int(x0/ratio)
                             y0 = int(y0/ratio)
                             x1 = int(x1/ratio)
                             y1 = int(y1/ratio)
-                            x0 = min(x0,x1)
-                            x1 = max(x0,x1)
-                            y0 = min(y0,y1)
-                            y1 = max(y0,y1)
+                            x0 = max(0,x0)
+                            y0 = max(0,y0)
+                            x1 = min(x1,c_w)
+                            y1 = min(y1,c_h)
                             lab = label_lists[line_index]
                             if self.verify_bounding_box == 'yes':
                                 draw.rectangle(((x0,y0),(x1,y1)),outline='yellow')
@@ -616,6 +634,12 @@ class Window(QWidget):
         super().wheelEvent(event)
         delta = event.angleDelta()
         #self.wheel_angle = self.wheel_angle + delta.y()
+        hz_bar = self.scrollArea.horizontalScrollBar()
+        vt_bar = self.scrollArea.verticalScrollBar()
+        #print(hz_bar.value())
+        #print(vt_bar.value())
+        #print(event.x())
+        #print(event.y())
 
         if delta.y() > 0:
             self.scale = self.scale * self.scale_rate
@@ -628,6 +652,13 @@ class Window(QWidget):
             self.imageLabel.setImageScale(self.scale)
             self.imageLabel.resize(self.imageLabel.pixmap().size()*self.scale)
             self.imageLabel.scale(1/self.scale_rate)
+        width = self.image_frame.frameGeometry().width()
+        height = self.image_frame.frameGeometry().height()
+        #ratio_x = event.x()/width
+        #ratio_y = event.y()/height
+        ratio_x,ratio_y = self.imageLabel.get_wheel_ratio()
+        hz_bar.setValue(int(hz_bar.maximum()*ratio_x))
+        vt_bar.setValue(int(vt_bar.maximum()*ratio_y))
 
 
         
@@ -658,6 +689,7 @@ class Window(QWidget):
 
 
         self.text_box= QTextEdit() 
+        self.text_box.setReadOnly(True)
         #self.text_box.setMaximumSize(10000000,150)
         self.scrollArea_info = my_QScrollArea(self.text_box)
         self.scrollArea_info.setBackgroundRole(QPalette.Dark)
@@ -732,7 +764,8 @@ class Window(QWidget):
         del(self.history[-1])
         self.image_index = self.image_index + 1
 
-
+        self.update_text_key('Index',self.image_index + 1)
+        self.update_text_key('Image name',image_name)
 
 
 

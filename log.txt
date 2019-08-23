@@ -1,1 +1,21 @@
-This is already the begining
+go to next
+Path saving labeled image:->/home/nature/Desktop/123/123
+Path saving unlabeled image:->/home/nature/Desktop/123/123
+Index:->2
+Image name:->/dev/shm/m1/cam_images/Cam_1_8.bmp
+Folder:->/dev/shm/m1/cam_images
+Total file:->238
+Path saving labeled image:->/home/nature/Desktop/123/123
+Path saving unlabeled image:->/home/nature/Desktop/123/123
+Index:->1
+Image name:->/dev/shm/m1/cam_images/Cam_1_9.bmp
+Path saving labeled image:->/home/nature/Desktop/123/123
+Path saving unlabeled image:->/home/nature/Desktop/123/123
+Index:->2
+Image name:->/dev/shm/m1/cam_images/Cam_1_8.bmp
+Folder:->/dev/shm/m1/cam_images
+Total file:->238
+Path saving labeled image:->/home/nature/Desktop/123/123
+Path saving unlabeled image:->/home/nature/Desktop/123/123
+Index:->1
+Image name:->/dev/shm/m1/cam_images/Cam_1_9.bmp
