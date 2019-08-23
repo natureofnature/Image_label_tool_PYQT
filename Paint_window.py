@@ -60,7 +60,7 @@ class my_QLabel_painter(QLabel):
         self.position_lists = []
         self.penRectangle = QtGui.QPen(QtCore.Qt.green)
         self.penRectangle.setWidth(30)
-        self.released = False
+        self.released = True
         self.image_scale = 1
         self.qpoints = []
         self.last_pos = None
@@ -70,7 +70,16 @@ class my_QLabel_painter(QLabel):
         self.qimage_list = []
         self.counter = 0
         self.is_painting = True
+        self.wheel_x = 0
+        self.wheel_y = 0
+        self.setMouseTracking(True)
 
+    def setNumClasses(self,value):
+        pass
+    def set_bbx_color(self,value):
+        pass
+    def set_pen_width(self,value):
+        self.penRectangle.setWidth(int(value))
     def setNumClasses(self,value):
         pass
     def set_qimage(self,qimage):
@@ -88,6 +97,9 @@ class my_QLabel_painter(QLabel):
     #    super().wheelEvent(event)
     #    delta = event.angleDelta()
     #   print(delta)
+    def get_wheel_ratio(self):
+        width,height = self.pixmap().width(),self.pixmap().height()
+        return self.wheel_x/width,self.wheel_y/height
 
     def round_coord(self):
         for i in range(len(self.coord)):
@@ -160,25 +172,29 @@ class my_QLabel_painter(QLabel):
         self.released = False
 
     def mouseMoveEvent(self, event):
-        self.last_pos = self.current_pos
-        self.coord[2] = event.pos().x()
-        self.coord[3] = event.pos().y()
-        self.current_pos = event.pos()
-        self.round_coord()
-        self.qpoints.append(QPoint(event.pos().x(),event.pos().y()))
-        self.lines.append((self.last_pos,self.current_pos))
-        self.update()
-        if self.qimage is not None:
-            qp = QtGui.QPainter(self.qimage)
-            #qp.begin(current_pix_map)
-            br = QtGui.QBrush(QtGui.QColor(100, 10, 10, 40))  
-            #qp.setBrush(br)   
-            qp.setPen(self.penRectangle)
-            #for qpoint in self.qpoints:
-            #    qp.drawPoints(qpoint)
-            for line in self.lines:
-                qp.drawLine(line[0]/self.image_scale,line[1]/self.image_scale)
-            self.counter = self.counter + 1
+        #tracking mouse position for wheel change
+        self.wheel_x = event.pos().x()/self.image_scale
+        self.wheel_y = event.pos().y()/self.image_scale
+        if self.released is False:
+            self.last_pos = self.current_pos
+            self.coord[2] = event.pos().x()
+            self.coord[3] = event.pos().y()
+            self.current_pos = event.pos()
+            self.round_coord()
+            self.qpoints.append(QPoint(event.pos().x(),event.pos().y()))
+            self.lines.append((self.last_pos,self.current_pos))
+            self.update()
+            if self.qimage is not None:
+                qp = QtGui.QPainter(self.qimage)
+                #qp.begin(current_pix_map)
+                br = QtGui.QBrush(QtGui.QColor(100, 10, 10, 40))  
+                #qp.setBrush(br)   
+                qp.setPen(self.penRectangle)
+                #for qpoint in self.qpoints:
+                #    qp.drawPoints(qpoint)
+                for line in self.lines:
+                    qp.drawLine(line[0]/self.image_scale,line[1]/self.image_scale)
+                self.counter = self.counter + 1
 
         
 
@@ -246,17 +262,17 @@ class popupinfo(QWidget):
 
 
 class popupwindow(QWidget):
-    def __init__(self,num_class = 2,label_val = [],window_status=[]):
+    def __init__(self,num_class = 2,label_val = [],window_status=[],x=200,y=200):
         self.num_class = num_class
         self.window_status = window_status
         QWidget.__init__(self)
         w_w,w_h = get_screen_size()
         self.setWindowTitle('Set the label')
-        x,y = get_mouse_press_position()
+        
         #print(x,y)
         g_x = (num_class/5+1)*50
-        
-        self.setGeometry(200,200,500,g_x)
+        print(x,y)
+        self.setGeometry(x,y,500,g_x)
         #self.setGeometry(int(w_w/2),int(w_h/2),500,500)
         self.raise_()
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowStaysOnTopHint)

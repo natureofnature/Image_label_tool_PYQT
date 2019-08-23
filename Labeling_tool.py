@@ -69,18 +69,28 @@ class my_QLabel(QLabel):
         self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
         self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
         self.penRectangle.setWidth(1)
-        self.released = False
+        self.released = True
         self.image_scale = 1
         self.label_dic = getLabelDic()
         self.num_class = config_dic['number_classes']
         self.wheel_x = 0
         self.wheel_y = 0
+        self.x = 0
+        self.y = 0
         self.setMouseTracking(True)
-
+    def set_pen_width(self,value):
+    	pass
     def setNumClasses(self,value):
         self.num_class= value
         
-    
+    def set_bbx_color(self,value):
+    	self.bbx_color = value
+    	self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
+    def set_ruler_color(self,value):
+    	self.ruler_color = value
+    	self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
+
+
     #def wheelEvent(self,event):
     #    super().wheelEvent(event)
     #    delta = event.angleDelta()
@@ -134,6 +144,7 @@ class my_QLabel(QLabel):
         if len(self.label_lists) != len(self.coord_list):#no label is set
             print(len(self.label_lists))
             return
+        
         self.coord[0] = event.pos().x()
         self.coord[1] = event.pos().y()
         self.coord[2] = event.pos().x()
@@ -145,8 +156,13 @@ class my_QLabel(QLabel):
 
     def mouseMoveEvent(self, event):
         #tracking mouse position for wheel change
+        
+
         self.wheel_x = event.pos().x()/self.image_scale
         self.wheel_y = event.pos().y()/self.image_scale
+        self.x = self.wheel_x
+        self.y = self.wheel_y
+
         if len(self.label_lists) != len(self.coord_list):#no label is set
             return
         self.coord[2] = event.pos().x()
@@ -175,7 +191,7 @@ class my_QLabel(QLabel):
             self.position_lists.append((x0,y0,x1,y1,self.image_scale,(self.pixmap().width(),self.pixmap().height())))
             self.coord_list.append([x0,y0,x1,y1])
             self.window_status.append("opened")
-            self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status)
+            self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status,self.x,self.y)
             self.ppw.show()
         set_mouse_press_position(event.pos().x(),event.pos().y())
         #print(event.pos().x(),event.pos().y())
@@ -302,6 +318,15 @@ class Window(QWidget):
         class_menu = option_menu.addMenu("Number of classes")
         for i in range(32):
             class_menu.addAction(str(i+1)).triggered.connect(lambda state,arg0=(i+1):self.setClassNumber(arg0))
+
+        bbx_color_menu = option_menu.addMenu("BBx_color")
+        ruler_color_menu = option_menu.addMenu("Ruler_color")
+        for i in ["red","yellow","white","blue","green"]:
+            bbx_color_menu.addAction(i).triggered.connect(lambda state,arg0=i:self.set_bbx_color(arg0))
+            ruler_color_menu.addAction(i).triggered.connect(lambda state,arg0=i:self.set_ruler_color(arg0))
+        pen_width_menu = option_menu.addMenu("Pen width")
+        for i in [5,10,20,30,40,50,60,70,80,100]:
+        	pen_width_menu.addAction(str(i)).triggered.connect(lambda satte,arg0=i:self.imageLabel.set_pen_width(arg0))
         
 
         #option_menu.addAction("Move mode")
@@ -333,6 +358,11 @@ class Window(QWidget):
         self.last_image = "./configure_files/endbg.png"
         self.first_image="./configure_files/beginbg.png"
         self.wheel_angle = 0
+
+    def set_bbx_color(self,value):
+        self.imageLabel.set_bbx_color(value)
+    def set_ruler_color(self,value):
+        self.imageLabel.set_ruler_color(value)
 
     def setClassNumber(self,value):
         self.imageLabel.setNumClasses(value)
