@@ -17,6 +17,7 @@
 from PyQt5.QtCore import *
 from PIL import Image,ImageDraw
 from PyQt5 import QtCore,QtGui
+from PyQt5.Qt import QCursor
 from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
 from Configure import getConfig,setConfig,getLastDialogue,setPath,getLabelDic
 import imghdr
@@ -34,9 +35,12 @@ from global_variable import set_screen_size,set_mouse_press_position
 Image.MAX_IMAGE_PIXELS = 1000000000
 
 class my_QScrollArea(QScrollArea):
-    def __init__(self,widget=None):
+    def __init__(self,widget=None,key_press_mode="Normal"):
         super(my_QScrollArea,self).__init__()
         self.registered_widget = widget 
+        self.key_press_mode = key_press_mode
+        #if key_press_mode == "Normal":
+            #self.setFocusPolicy(Qt.StrongFocus)
     
     def get_size(self):
         return self.width(),self.height()
@@ -47,9 +51,13 @@ class my_QScrollArea(QScrollArea):
             self.registered_widget.resize(self.width(),self.height())
 
     def wheelEvent(self,event):
-        #do nothing
+        #override,do nothing
         pass
-
+    def keyPressEvent(self,event):
+        if self.key_press_mode== "Normal":
+            super().keyPressEvent(event)
+        else:
+            pass
    
 
 class my_QLabel(QLabel):
@@ -79,16 +87,16 @@ class my_QLabel(QLabel):
         self.y = 0
         self.setMouseTracking(True)
     def set_pen_width(self,value):
-    	pass
+        pass
     def setNumClasses(self,value):
         self.num_class= value
         
     def set_bbx_color(self,value):
-    	self.bbx_color = value
-    	self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
+        self.bbx_color = value
+        self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
     def set_ruler_color(self,value):
-    	self.ruler_color = value
-    	self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
+        self.ruler_color = value
+        self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
 
 
     #def wheelEvent(self,event):
@@ -141,6 +149,8 @@ class my_QLabel(QLabel):
 
 
     def mousePressEvent(self, event):
+        self.x = QCursor.pos().x()
+        self.y=  QCursor.pos().y()
         if len(self.label_lists) != len(self.coord_list):#no label is set
             print(len(self.label_lists))
             return
@@ -160,8 +170,6 @@ class my_QLabel(QLabel):
 
         self.wheel_x = event.pos().x()/self.image_scale
         self.wheel_y = event.pos().y()/self.image_scale
-        self.x = self.wheel_x
-        self.y = self.wheel_y
 
         if len(self.label_lists) != len(self.coord_list):#no label is set
             return
@@ -171,9 +179,11 @@ class my_QLabel(QLabel):
         self.update()
         self.update_text_key('Mouse position',str(int(self.coord[2]/self.image_scale))+","+str(int(self.coord[3]/self.image_scale)))
 
+
     def mouseReleaseEvent(self,event):
         if len(self.label_lists) != len(self.coord_list):#no label is set
             return
+
         self.coord[2] = event.pos().x()
         self.coord[3] = event.pos().y()
         self.round_coord()
@@ -187,11 +197,12 @@ class my_QLabel(QLabel):
             tmp = y1
             y1 = y0
             y0 = tmp
+
         if x1!=x0 and y1!=y0:
             self.position_lists.append((x0,y0,x1,y1,self.image_scale,(self.pixmap().width(),self.pixmap().height())))
             self.coord_list.append([x0,y0,x1,y1])
             self.window_status.append("opened")
-            self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status,self.x,self.y)
+            self.ppw = popupwindow(int(self.num_class),self.label_lists,self.window_status,int(self.x),int(self.y))
             self.ppw.show()
         set_mouse_press_position(event.pos().x(),event.pos().y())
         #print(event.pos().x(),event.pos().y())
@@ -304,7 +315,7 @@ class Window(QWidget):
 
 
         #Part 2
-        self.next_action = menubar.addAction("Next (F)")
+        self.next_action = menubar.addAction("Next (N)")
         self.next_action.triggered.connect(self.next_image)
 
         #Part 3
@@ -326,7 +337,7 @@ class Window(QWidget):
             ruler_color_menu.addAction(i).triggered.connect(lambda state,arg0=i:self.set_ruler_color(arg0))
         pen_width_menu = option_menu.addMenu("Pen width")
         for i in [5,10,20,30,40,50,60,70,80,100]:
-        	pen_width_menu.addAction(str(i)).triggered.connect(lambda satte,arg0=i:self.imageLabel.set_pen_width(arg0))
+                pen_width_menu.addAction(str(i)).triggered.connect(lambda satte,arg0=i:self.imageLabel.set_pen_width(arg0))
         
 
         #option_menu.addAction("Move mode")
@@ -565,6 +576,7 @@ class Window(QWidget):
 
 
     def next_image(self):
+        self.scrollArea.setFocus()
         if self.image_lists is None:
             self.printf("Please select image folder first")
             return
@@ -629,7 +641,7 @@ class Window(QWidget):
         self.imageLabel.resize(image_width,image_height)
         self.image_name = image_name
         self.image_index = self.image_index + 1
-        self.next_action.setText("Next (F)")
+        self.next_action.setText("Next (N)")
 
 
         
@@ -652,7 +664,7 @@ class Window(QWidget):
             self.imageLabel.scale(1/self.scale_rate)
         elif event.key()==(Qt.Key_Control and Qt.Key_Z):
             self.imageLabel.undo()
-        elif event.key()==(Qt.Key_F):
+        elif event.key()==(Qt.Key_N):
             self.printf("go to next")
             self.next_image() 
         elif event.key()==(Qt.Key_P):
@@ -721,7 +733,7 @@ class Window(QWidget):
         self.text_box= QTextEdit() 
         self.text_box.setReadOnly(True)
         #self.text_box.setMaximumSize(10000000,150)
-        self.scrollArea_info = my_QScrollArea(self.text_box)
+        self.scrollArea_info = my_QScrollArea(self.text_box,"ignore_key")
         self.scrollArea_info.setBackgroundRole(QPalette.Dark)
         self.scrollArea_info.setWidget(self.text_box)
 

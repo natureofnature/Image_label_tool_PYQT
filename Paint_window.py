@@ -271,7 +271,6 @@ class popupwindow(QWidget):
         
         #print(x,y)
         g_x = (num_class/5+1)*50
-        print(x,y)
         self.setGeometry(x,y,500,g_x)
         #self.setGeometry(int(w_w/2),int(w_h/2),500,500)
         self.raise_()
