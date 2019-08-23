@@ -149,8 +149,6 @@ class my_QLabel(QLabel):
 
 
     def mousePressEvent(self, event):
-        self.x = QCursor.pos().x()
-        self.y=  QCursor.pos().y()
         if len(self.label_lists) != len(self.coord_list):#no label is set
             print(len(self.label_lists))
             return
@@ -181,6 +179,8 @@ class my_QLabel(QLabel):
 
 
     def mouseReleaseEvent(self,event):
+        self.x = QCursor.pos().x()
+        self.y=  QCursor.pos().y()
         if len(self.label_lists) != len(self.coord_list):#no label is set
             return
 
