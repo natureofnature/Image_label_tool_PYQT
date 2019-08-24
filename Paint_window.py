@@ -279,6 +279,7 @@ class popupwindow(QWidget):
         self.set_layout()
         self.label_number = 0
         self.label_val = label_val
+        
 
     def set_layout(self):
         self.setStyleSheet("background-color: lightyellow;")
@@ -322,7 +323,7 @@ class popupwindow(QWidget):
                 row_index = row_index + 1
             else:
                 col_index = col_index+1
-
+        
         
     def closeEvent(self,event):
         self.label_val.append(self.label_number)
