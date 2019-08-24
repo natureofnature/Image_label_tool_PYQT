@@ -2,3 +2,8 @@
 __pycache__
 __pycache__/
 *.txt
+dist/
+dist
+build/
+build
+*.spec
