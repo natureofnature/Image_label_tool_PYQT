@@ -75,7 +75,7 @@ class my_QLabel(QLabel):
         config_dic,_ = getConfig()
         self.bbx_color = config_dic['bbx_color']
         self.ruler_color=config_dic['ruler_color']
-        self.color_dic={'green':QtCore.Qt.green,'red':QtCore.Qt.red,'yellow':QtCore.Qt.yellow,'white':QtCore.Qt.white,'blue':QtCore.Qt.blue}
+        self.color_dic={'green':QtCore.Qt.green,'red':QtCore.Qt.red,'yellow':QtCore.Qt.yellow,'white':QtCore.Qt.white,'blue':QtCore.Qt.blue,'black':QtCore.Qt.black}
         self.penRectangle = QtGui.QPen(self.color_dic[self.bbx_color])
         self.penRectangle_ruler = QtGui.QPen(self.color_dic[self.ruler_color],1,QtCore.Qt.DashDotLine)
         self.penRectangle.setWidth(1)
@@ -304,6 +304,7 @@ class Window(QWidget):
         set_screen_size(screen_size.width(),screen_size.height())
         self.get_attributes()
         QWidget.__init__(self)
+        self.setWindowIcon(QtGui.QIcon("./configure_files/ninja-simple-512.ico"))
         self.setWindowTitle('Label_tool_V2.1.0_by_LWZ')
         self.layout = QGridLayout()
         self.setLayout(self.layout)
@@ -358,7 +359,7 @@ class Window(QWidget):
 
         bbx_color_menu = option_menu.addMenu("BBx_color")
         ruler_color_menu = option_menu.addMenu("Ruler_color")
-        for i in ["red","yellow","white","blue","green"]:
+        for i in ["red","yellow","white","blue","green","black"]:
             bbx_color_menu.addAction(i).triggered.connect(lambda state,arg0=i:self.set_bbx_color(arg0))
             ruler_color_menu.addAction(i).triggered.connect(lambda state,arg0=i:self.set_ruler_color(arg0))
         pen_width_menu = option_menu.addMenu("Pen width")
@@ -476,6 +477,7 @@ class Window(QWidget):
         while path is None or len(path) == 0:
             path = QFileDialog.getExistingDirectory(self, 'Select root directory',directory = self.last_root_dir)
         setPath('last_save_folder_Root',path)
+        self.last_root_dir = path
         now_time = datetime.datetime.now()
         time_string = str(now_time.year)+"-"+str(now_time.month)+"-"+str(now_time.day)+"-"+str(now_time.hour)
 
