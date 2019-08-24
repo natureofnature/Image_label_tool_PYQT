@@ -7,4 +7,5 @@
 ### Pyqt5,python3
 ## To run the program
 ### python3 Labeling_tool.py
+# For more info, press the help menu button
 

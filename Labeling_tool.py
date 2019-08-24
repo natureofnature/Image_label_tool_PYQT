@@ -16,7 +16,7 @@
 '''
 from PyQt5.QtCore import *
 from PIL import Image,ImageDraw
-from PyQt5 import QtCore,QtGui
+from PyQt5 import QtCore,QtGui,QtWebEngineWidgets
 from PyQt5.Qt import QCursor
 from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
 from Configure import getConfig,setConfig,getLastDialogue,setPath,getLabelDic
@@ -59,7 +59,17 @@ class my_QScrollArea(QScrollArea):
             super().keyPressEvent(event)
         else:
             pass
-   
+
+class html_window(QtWebEngineWidgets.QWebEngineView):
+    def __init__(self):
+        super(html_window, self).__init__()
+        dirpath = os.getcwd()
+        Url = "file:////"+os.path.join(dirpath,"configure_files/documents/index.html").replace('\\','/')
+        #Url = "https://sway.office.com/QGfgvw2JVjmyYdRv?ref=Link"
+        self.setWindowIcon(QtGui.QIcon("./configure_files/ninja-simple-512.ico"))
+        self.setWindowTitle('Help')
+        #self.load(QtCore.QUrl("file:////"+os.path.join(dirpath,"configure_files/documents/index.html")))
+        self.load(QtCore.QUrl(Url))
 
 class my_QLabel(QLabel):
     def __init__(self,update_text_key):
@@ -375,6 +385,7 @@ class Window(QWidget):
         move_mode_menu.addAction("Keep original images").triggered.connect(self.set_move_false)
         move_mode_menu.addAction("Move original images").triggered.connect(self.set_move_true)
 
+        menubar.addAction("Help").triggered.connect(self.help)
 
         self.set_menu_style(option_menu)
 
@@ -407,6 +418,10 @@ class Window(QWidget):
         self.imageLabel.setNumClasses(value)
         self.update_text_key('Number of class',value)
         
+    def help(self):
+        self.htm_win = html_window()
+        self.htm_win.setGeometry(600, 150, 1000, 1000)
+        self.htm_win.show()
 
     def set_label_mode(self):
         if self.label_mode == "painting_mode":
@@ -788,6 +803,7 @@ class Window(QWidget):
        
     def set_layout(self):
         self.setStyleSheet("background-color: lightyellow;")
+
         self.splitter = QSplitter(Qt.Vertical)
         
         self.image_frame = QFrame(self)

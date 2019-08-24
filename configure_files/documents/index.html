@@ -1,0 +1,155 @@
+﻿<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Label tool by LWZ</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body>
+
+		<!-- Header -->
+			<header id="header">
+				<div class="logo"><a href="#">Label Tool <span>by LWZ</span></a></div>
+			</header>
+
+		<!-- Main -->
+			<section id="main">
+                <div class="inner">
+
+                    <!-- One -->
+                    <section id="one" class="wrapper style1">
+
+                        <div class="image fit flush">
+                            <img src="images/pic02.jpg" alt="" />
+                        </div>
+                        <header class="special">
+                            <h2>Working Modes</h2>
+                            <p>Part I</p>
+                        </header>
+                        <div class="content">
+                            <p>This application supports two modes: bounding box mode and painting mode. </p>
+                            <p>(1) Bounding box mode records bounding boxes of the objects on the target image together with their classes. This mode is usually for object detection.</p>
+                            <div>
+                                <img width="300" src="images/demo1.jpg"
+                            </div>
+                            <p>(2) Painting mode enables you to draw masks on the image. And it's usally used for segmenation.</p>
+                            <div>
+                                <img width="300" src="images/demo2.jpg"
+                            </div>
+                            <p>You can switch between these two modes by modifying config.cfg under the folder configure</p>
+                            <div>
+                                <img width="500" src="images/help_config_txt.jpg" alt="" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Two -->
+                    <section id="two" class="wrapper style1">
+
+
+                        <header class="special">
+                            <h2>GUI explanation</h2>
+                            <p>Part II</p>
+
+                        </header>
+                        <div class="content">
+                            <p>Menu buttons </p>
+                            <p>(1) Using file menu, you can select the folder contains the images your want to label by pressing "Select image folder", and choose the folder to save your results by pressing "Saving image to...". </p>
+                            <div>
+                                <img width="500" src="images/GUI_1.jpg"
+                            </div>
+                            <p>(2) The second button on the menu bar will save current status of labeled image, and display the next image in the folder. And you can also do this by pressing "N" of your keyboard.</p>
+                            <div>
+                                <img width="500" src="images/GUI_2.jpg"
+                            </div>
+                            <p>(3) The third button enables you to go back to the previous images while keeping the bounding boxes on the previous image. And the shortcut for this function is "P". Note, currently, this button only works under the "bounding box mode."</p>
+                            <div>
+                                <img width="500" src="images/GUI_3.jpg"
+                            </div>
+                            <p>(4) The fourth button can undo the operations on the current image. Also you can press "Z" to do this.</p>
+                            <div>
+                                <img width="500" src="images/GUI_4.jpg" alt="" />
+                            </div>
+                            <p>(5) The fifth button provides more options.</p>
+                            <div>
+                                <img width="500" src="images/GUI_5.jpg" alt="" />
+                            </div>
+                            <p>The options (number of classes, bbx_color, Ruler_color, Move mode) are used for bounding box mode. The options (Pen width,Move mode) are used for painting mode</p>
+                            <p>(5.1) Adjust the number of class to display better.</p>
+                            <div>
+                                <img width="500" src="images/GUI_7.jpg" alt="" />
+                            </div>
+                            <p>(5.2) Ajust the bounding box color using BBx_color option</p>
+                            <div>
+                                <img width="500" src="images/GUI_8.jpg" alt="" />
+                            </div>
+
+                            <p>(5.3) Ajust the rulder color using ruler_color option</p>
+                            <div>
+                                <img width="500" src="images/GUI_9.jpg" alt="" />
+                            </div>
+                            <p>(5.4) Move mode: if you choose to move original images, those labeld original images will be moved from its original folder to the target folder saving the result. The copy mode will keep the image where it exists. The default mode keeps the original mode</p>
+                            <div>
+                                <img width="500" src="images/GUI_10.jpg" alt="" />
+                            </div>
+                            <p>(6) The sixth button will show this document.</p>
+
+                            <div>
+                                <img width="500" src="images/GUI_6.jpg" alt="" />
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <!-- Three -->
+                    <section id="three" class="wrapper style1">
+                        <header class="special">
+                            <h2>Saved results</h2>
+                            <p>Part III</p>
+                        </header>
+                        <div class="content">
+                            <p>Two folders will be created under the root directory for saving results </p>
+                            <div>
+                                <img width="800" src="images/results_1.jpg"
+                            </div>
+                            <p>They are arranges as</p>
+                            <div class="spotlight alt">
+                                <img width="200" src="images/saved_architect_1.jpg" />
+                                <img width="200" src="images/saved_architect_2.jpg" />
+                            </div>
+                            <p> The folder, with prefix Labeld_image, contains the results of the images which you draw bounding boxes or masks on them. And the suffix is the time print</p>
+
+                            <p> The folder, with prefix Unlabeld_image, contains the results of the images which you do not draw bounding boxes or masks on them. And the suffix is the time print</p>
+
+                        </div>
+                    </section>
+
+                    <!-- Footer -->
+                    <footer id="footer">
+                        <div class="container">
+                            <ul class="icons">
+                                <li><a href="#" class="icon fa-twitter"><span class="label">Twitter</span></a></li>
+                                <li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li>
+                                <li><a href="#" class="icon fa-instagram"><span class="label">Instagram</span></a></li>
+                                <li><a href="#" class="icon fa-envelope-o"><span class="label">Email</span></a></li>
+                            </ul>
+                        </div>
+                        <div class="copyright">
+                            &copy; NATURE(LWZ). All rights reserved.
+                        </div>
+                    </footer>
+
+
+
+
+                    <!-- Scripts -->
+                    <script src="assets/js/jquery.min.js"></script>
+                    <script src="assets/js/jquery.poptrox.min.js"></script>
+                    <script src="assets/js/skel.min.js"></script>
+                    <script src="assets/js/util.js"></script>
+                    <script src="assets/js/main.js"></script>
+
+</body>
+</html>
